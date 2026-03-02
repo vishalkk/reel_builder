@@ -1,0 +1,131 @@
+name: mis_mobile
+description: Mobile app for applicationName.
+
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.2.4 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  flutter_contacts: ^1.1.9+2
+  cupertino_icons: ^1.0.8
+  dartz: ^0.10.1
+  device_preview: ^1.2.0
+  dio: ^5.8.0+1
+  easy_localization: ^3.0.7+1
+  firebase_core: ^4.4.0
+  fl_chart: ^1.1.1
+  flutter_bloc: ^9.1.0
+  flutter_map: ^8.1.1
+  flutter_svg: ^2.0.17
+  geocoding: ^4.0.0
+  get_it: ^9.2.1
+  getwidget: ^7.0.0
+  gradient_progress_indicator: ^1.0.0+5
+  image_picker: ^1.1.2
+  json_annotation: ^4.9.0
+  latlong2: ^0.9.1
+  local_auth: ^3.0.1
+  location: ^8.0.0
+  percent_indicator: ^4.2.4
+  permission_handler: ^12.0.1
+  pinput: ^6.0.2
+  pretty_dio_logger: ^1.4.0
+  provider: ^6.1.4
+  qr_code_scanner_plus: ^2.0.10+1
+  retrofit: ^4.4.2
+  shared_preferences: ^2.5.3
+  sliding_up_panel: ^2.0.0+1
+  url_launcher: ^6.3.1
+  flutter_screenutil: ^5.9.3
+  device_info_plus: ^12.3.0
+  image_cropper: ^11.0.0
+  loggy: ^2.0.3
+  secure_dotenv: ^1.0.0
+  flutter_dotenv: ^6.0.0
+  flutter_swipe_button: ^2.1.1+1
+  flutter_doc_scanner: ^0.0.15
+  quickalert: ^1.1.0
+  camera: ^0.12.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  flutter_flavorizr: ^2.2.3
+  bloc_test: ^10.0.0
+  build_runner: ^2.4.15
+  json_serializable: ^6.9.4
+  mocktail: ^1.0.4
+  retrofit_generator: ^10.2.3
+
+# The following section is specific to Flutter.
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/icons/add_money_icons/
+    - .env.dev
+  fonts:
+    - family: Plus Jakarta
+      fonts:
+        - asset: assets/fonts/Jakarta/PlusJakartaDisplay-Bold.otf
+        - asset: assets/fonts/Jakarta/PlusJakartaDisplay-Light.otf
+        - asset: assets/fonts/Jakarta/PlusJakartaDisplay-Medium.otf
+        - asset: assets/fonts/Jakarta/PlusJakartaDisplay-Regular.otf
+
+flavorizr:
+  ide: "vscode"
+  app:
+  android:
+    flavorDimensions: "environment" # Android flavor dimensions
+  ios:
+    targets:
+      Runner:
+        buildSettings:
+          PRODUCT_BUNDLE_IDENTIFIER: "com.applicationName.companyName"
+  flavors:
+    dev:
+      app:
+        name: "MyApp Dev"
+
+      android:
+        applicationId: "com.applicationName.companyName.dev"
+      ios:
+        bundleId: "com.applicationName.companyName.dev"
+
+    uat:
+      app:
+        name: "MyApp UAT"
+
+      android:
+        applicationId: "com.applicationName.companyName.uat"
+      ios:
+        bundleId: "com.applicationName.companyName.uat"
+
+    prod:
+      app:
+        name: "MyApp"
+
+      android:
+        applicationId: "com.applicationName.companyName"
+      ios:
+        bundleId: "com.applicationName.companyName"
+
+instructions:
+  - android:
+      - clean
+      - flavors
+  - ios:
+      - clean
+      - flavors
