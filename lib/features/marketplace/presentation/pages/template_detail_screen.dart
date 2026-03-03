@@ -1,13 +1,11 @@
-import 'package:dartz/dartz.dart' hide State;
 import 'package:flutter/material.dart';
-import 'package:mis_mobile/core/Network/api_client.dart';
-import 'package:mis_mobile/core/Network/api_failure.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mis_mobile/core/di/di.dart';
 import 'package:mis_mobile/core/theme/premium_colors.dart';
 import 'package:mis_mobile/core/theme/premium_spacing.dart';
-import 'package:mis_mobile/features/marketplace/data/datasources/template_remote_data_source.dart';
 import 'package:mis_mobile/features/marketplace/data/models/template_detail_dto.dart';
 import 'package:mis_mobile/features/marketplace/data/models/template_summary_dto.dart';
-import 'package:mis_mobile/features/marketplace/data/repositories/template_repository.dart';
+import 'package:mis_mobile/features/marketplace/presentation/bloc/template_detail_bloc.dart';
 import 'package:mis_mobile/features/template_use/presentation/pages/template_use_page.dart';
 import 'package:mis_mobile/features/widgets/duration_badge.dart';
 import 'package:mis_mobile/features/widgets/gold_gradient_button.dart';
@@ -30,67 +28,33 @@ class TemplateDetailScreen extends StatefulWidget {
 }
 
 class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
-  late final TemplateRepository _repository;
-
-  bool _isLoading = true;
-  String? _error;
-  TemplateDetailDto? _detail;
-
+  late final TemplateDetailBloc _bloc;
   late final TextEditingController _slotsController;
   late final TextEditingController _textFieldsController;
   late final TextEditingController _themeController;
 
   VideoPlayerController? _videoController;
   bool _videoReady = false;
+  String? _lastPreparedTemplateId;
 
   @override
   void initState() {
     super.initState();
-    _repository =
-        TemplateRepositoryImpl(TemplateRemoteDataSourceImpl(ApiClient()));
+    _bloc = sl<TemplateDetailBloc>()
+      ..add(TemplateDetailRequested(widget.templateId));
     _slotsController = TextEditingController(text: '3');
     _textFieldsController = TextEditingController(text: '5');
     _themeController = TextEditingController(text: 'Premium Gold');
-    _loadDetail();
   }
 
   @override
   void dispose() {
+    _bloc.close();
     _slotsController.dispose();
     _textFieldsController.dispose();
     _themeController.dispose();
     _videoController?.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadDetail() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    final Either<ApiFailure, TemplateDetailDto> result =
-        await _repository.fetchTemplateDetail(widget.templateId);
-
-    result.fold(
-      (failure) {
-        setState(() {
-          _isLoading = false;
-          _error = failure.message;
-        });
-      },
-      (detail) async {
-        _applySummaryDefaults(detail);
-        await _setupVideo(detail.previewUrl);
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _detail = detail;
-          _isLoading = false;
-        });
-      },
-    );
   }
 
   void _applySummaryDefaults(TemplateDetailDto detail) {
@@ -111,11 +75,17 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
     _videoReady = false;
 
     if (previewUrl == null || previewUrl.isEmpty) {
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
 
     final uri = Uri.tryParse(previewUrl);
     if (uri == null || (!uri.hasScheme || !previewUrl.startsWith('http'))) {
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
 
@@ -126,26 +96,54 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
 
     _videoController = controller;
     _videoReady = true;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final title =
-        _detail?.title ?? widget.templateSummary?.title ?? 'Template Detail';
+    return BlocProvider<TemplateDetailBloc>.value(
+      value: _bloc,
+      child: BlocConsumer<TemplateDetailBloc, TemplateDetailState>(
+        listenWhen: (previous, current) =>
+            previous.detail?.id != current.detail?.id,
+        listener: (context, state) {
+          final detail = state.detail;
+          if (detail == null) {
+            return;
+          }
+          if (_lastPreparedTemplateId == detail.id) {
+            return;
+          }
+          _lastPreparedTemplateId = detail.id;
+          _applySummaryDefaults(detail);
+          _setupVideo(detail.previewUrl);
+        },
+        builder: (context, state) {
+          final detail = state.detail;
+          final title = detail?.title ??
+              widget.templateSummary?.title ??
+              'Template Detail';
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Template Detail')),
-      body: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _buildErrorState()
-                : _buildContent(title),
+          return Scaffold(
+            appBar: AppBar(title: const Text('Template Detail')),
+            body: SafeArea(
+              child:
+                  state.status == TemplateDetailStatus.loading && detail == null
+                      ? const Center(child: CircularProgressIndicator())
+                      : state.status == TemplateDetailStatus.failure &&
+                              detail == null
+                          ? _buildErrorState(state.error ?? 'Unknown error')
+                          : _buildContent(title, detail),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(String error) {
     return Padding(
       padding: const EdgeInsets.all(PremiumSpacing.x3),
       child: Column(
@@ -157,7 +155,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
           ),
           const SizedBox(height: PremiumSpacing.x1),
           Text(
-            _error!,
+            error,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -166,17 +164,17 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
           const SizedBox(height: PremiumSpacing.x3),
           GoldGradientButton(
             text: 'Retry',
-            onPressed: _loadDetail,
+            onPressed: () =>
+                _bloc.add(TemplateDetailRequested(widget.templateId)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildContent(String title) {
+  Widget _buildContent(String title, TemplateDetailDto? detail) {
     final duration = _formatDuration(
-      _detail?.durationSeconds ?? widget.templateSummary?.durationSeconds,
-    );
+        detail?.durationSeconds ?? widget.templateSummary?.durationSeconds);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(PremiumSpacing.x2),
@@ -196,7 +194,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
                       ),
                 ),
               ),
-              if ((_detail?.isPremium ?? widget.templateSummary?.isPremium) ==
+              if ((detail?.isPremium ?? widget.templateSummary?.isPremium) ==
                   true)
                 const PremiumBadge(),
             ],
@@ -240,15 +238,15 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> {
             width: double.infinity,
             child: GoldGradientButton(
               text: 'USE TEMPLATE',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => TemplateUsePage(
-                      template: _detail!,
-                    ),
-                  ),
-                );
-              },
+              onPressed: detail == null
+                  ? null
+                  : () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => TemplateUsePage(template: detail),
+                        ),
+                      );
+                    },
             ),
           ),
         ],

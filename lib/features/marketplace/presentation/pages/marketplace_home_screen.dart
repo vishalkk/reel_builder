@@ -1,13 +1,10 @@
-import 'package:dartz/dartz.dart' hide State;
 import 'package:flutter/material.dart';
-import 'package:mis_mobile/core/Network/api_client.dart';
-import 'package:mis_mobile/core/Network/api_failure.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mis_mobile/core/di/di.dart';
 import 'package:mis_mobile/core/theme/premium_colors.dart';
 import 'package:mis_mobile/core/theme/premium_spacing.dart';
-import 'package:mis_mobile/features/marketplace/data/datasources/template_remote_data_source.dart';
-import 'package:mis_mobile/features/marketplace/data/models/category_dto.dart';
 import 'package:mis_mobile/features/marketplace/data/models/template_summary_dto.dart';
-import 'package:mis_mobile/features/marketplace/data/repositories/template_repository.dart';
+import 'package:mis_mobile/features/marketplace/presentation/bloc/template_marketplace_bloc.dart';
 import 'package:mis_mobile/features/marketplace/presentation/pages/template_detail_screen.dart';
 import 'package:mis_mobile/features/widgets/category_chip.dart';
 import 'package:mis_mobile/features/widgets/duration_badge.dart';
@@ -23,68 +20,25 @@ class MarketplaceHomeScreen extends StatefulWidget {
 }
 
 class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
-  late final TemplateRepository _repository;
   final TextEditingController _searchController = TextEditingController();
-
-  bool _isLoading = true;
-  String? _error;
-  List<CategoryDto> _categories = const [];
-  List<TemplateSummaryDto> _templates = const [];
-  String? _selectedCategory;
+  late final TemplateMarketplaceBloc _bloc;
 
   @override
   void initState() {
     super.initState();
-    _repository =
-        TemplateRepositoryImpl(TemplateRemoteDataSourceImpl(ApiClient()));
-    _loadMarketplace();
+    _bloc = sl<TemplateMarketplaceBloc>()
+      ..add(const TemplateMarketplaceStarted());
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _bloc.close();
     super.dispose();
   }
 
-  Future<void> _loadMarketplace() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    final categoriesResult = await _repository.fetchCategories();
-    final templatesResult = await _repository.fetchTemplates(
-      category: _selectedCategory,
-      q: _searchController.text.trim().isEmpty
-          ? null
-          : _searchController.text.trim(),
-      page: 1,
-    );
-
-    final String? errorMessage =
-        _resolveFailure(categoriesResult) ?? _resolveFailure(templatesResult);
-
-    if (errorMessage != null) {
-      setState(() {
-        _isLoading = false;
-        _error = errorMessage;
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = false;
-      _categories = categoriesResult.getOrElse(() => const []);
-      _templates = templatesResult.getOrElse(() => const []);
-    });
-  }
-
-  String? _resolveFailure<T>(Either<ApiFailure, T> result) {
-    return result.fold((failure) => failure.message, (_) => null);
-  }
-
-  List<TemplateSummaryDto> get _trendingTemplates {
-    final sorted = [..._templates];
+  List<TemplateSummaryDto> _trendingTemplates(List<TemplateSummaryDto> source) {
+    final sorted = [...source];
     sorted.sort((a, b) {
       final premiumOrder = (b.isPremium ? 1 : 0) - (a.isPremium ? 1 : 0);
       if (premiumOrder != 0) {
@@ -97,22 +51,38 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadMarketplace,
-          child: _buildBody(context),
+    return BlocProvider<TemplateMarketplaceBloc>.value(
+      value: _bloc,
+      child: Scaffold(
+        body: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _bloc.add(const TemplateMarketplaceRefreshed());
+            },
+            child:
+                BlocBuilder<TemplateMarketplaceBloc, TemplateMarketplaceState>(
+              builder: (context, state) {
+                _searchController.value = _searchController.value.copyWith(
+                  text: state.search,
+                  selection:
+                      TextSelection.collapsed(offset: state.search.length),
+                );
+                return _buildBody(context, state);
+              },
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    if (_isLoading) {
+  Widget _buildBody(BuildContext context, TemplateMarketplaceState state) {
+    if (state.isLoading && state.templates.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_error != null) {
+    if (state.status == TemplateMarketplaceStatus.failure &&
+        state.templates.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(PremiumSpacing.x3),
         children: [
@@ -123,7 +93,7 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
           ),
           const SizedBox(height: PremiumSpacing.x1),
           Text(
-            _error!,
+            state.error ?? 'Unknown error',
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
@@ -132,13 +102,13 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
           const SizedBox(height: PremiumSpacing.x3),
           GoldGradientButton(
             text: 'Retry',
-            onPressed: _loadMarketplace,
+            onPressed: () => _bloc.add(const TemplateMarketplaceRefreshed()),
           ),
         ],
       );
     }
 
-    if (_templates.isEmpty) {
+    if (state.templates.isEmpty) {
       return ListView(
         padding: const EdgeInsets.all(PremiumSpacing.x3),
         children: [
@@ -146,7 +116,7 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
           const SizedBox(height: PremiumSpacing.x3),
           _buildSearchBar(),
           const SizedBox(height: PremiumSpacing.x3),
-          _buildCategoryChips(),
+          _buildCategoryChips(state),
           const SizedBox(height: PremiumSpacing.x4),
           Text(
             'No templates found',
@@ -164,6 +134,8 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
       );
     }
 
+    final trendingTemplates = _trendingTemplates(state.templates);
+
     return CustomScrollView(
       slivers: [
         SliverPadding(
@@ -176,9 +148,9 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
               const SizedBox(height: PremiumSpacing.x3),
               _buildSectionTitle('Trending'),
               const SizedBox(height: PremiumSpacing.x2),
-              _buildTrendingCarousel(),
+              _buildTrendingCarousel(trendingTemplates),
               const SizedBox(height: PremiumSpacing.x3),
-              _buildCategoryChips(),
+              _buildCategoryChips(state),
               const SizedBox(height: PremiumSpacing.x3),
               _buildSectionTitle('Templates'),
               const SizedBox(height: PremiumSpacing.x2),
@@ -196,10 +168,10 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
             ),
             delegate: SliverChildBuilderDelegate(
               (context, index) {
-                final template = _templates[index];
+                final template = state.templates[index];
                 return _buildTemplateGridCard(template);
               },
-              childCount: _templates.length,
+              childCount: state.templates.length,
             ),
           ),
         ),
@@ -236,12 +208,15 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
   Widget _buildSearchBar() {
     return TextField(
       controller: _searchController,
-      onSubmitted: (_) => _loadMarketplace(),
+      onSubmitted: (value) =>
+          _bloc.add(TemplateMarketplaceSearchSubmitted(value)),
       decoration: InputDecoration(
         hintText: 'Search templates...',
         prefixIcon: const Icon(Icons.search),
         suffixIcon: IconButton(
-          onPressed: _loadMarketplace,
+          onPressed: () => _bloc.add(
+            TemplateMarketplaceSearchSubmitted(_searchController.text),
+          ),
           icon: const Icon(Icons.tune),
         ),
       ),
@@ -259,9 +234,7 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
     );
   }
 
-  Widget _buildTrendingCarousel() {
-    final items = _trendingTemplates;
-
+  Widget _buildTrendingCarousel(List<TemplateSummaryDto> items) {
     return SizedBox(
       height: 200,
       child: ListView.separated(
@@ -317,33 +290,29 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
     );
   }
 
-  Widget _buildCategoryChips() {
+  Widget _buildCategoryChips(TemplateMarketplaceState state) {
     return SizedBox(
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _categories.length + 1,
+        itemCount: state.categories.length + 1,
         separatorBuilder: (_, __) => const SizedBox(width: PremiumSpacing.x1),
         itemBuilder: (context, index) {
           if (index == 0) {
             return CategoryChip(
               label: 'All',
-              selected: _selectedCategory == null,
-              onTap: () {
-                setState(() => _selectedCategory = null);
-                _loadMarketplace();
-              },
+              selected: state.selectedCategory == null,
+              onTap: () =>
+                  _bloc.add(const TemplateMarketplaceCategoryChanged(null)),
             );
           }
 
-          final category = _categories[index - 1];
+          final category = state.categories[index - 1];
           return CategoryChip(
             label: category.name,
-            selected: _selectedCategory == category.id,
-            onTap: () {
-              setState(() => _selectedCategory = category.id);
-              _loadMarketplace();
-            },
+            selected: state.selectedCategory == category.id,
+            onTap: () =>
+                _bloc.add(TemplateMarketplaceCategoryChanged(category.id)),
           );
         },
       ),
@@ -383,7 +352,8 @@ class _MarketplaceHomeScreenState extends State<MarketplaceHomeScreen> {
             children: [
               Flexible(
                 child: DurationBadge(
-                    duration: _formatDuration(template.durationSeconds)),
+                  duration: _formatDuration(template.durationSeconds),
+                ),
               ),
               if (template.isPremium) const PremiumBadge(),
             ],

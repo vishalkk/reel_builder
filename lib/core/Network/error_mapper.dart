@@ -59,6 +59,14 @@ class ErrorMapper {
 
   static String? _extractMessage(dynamic data) {
     if (data is Map<String, dynamic>) {
+      final dynamic detail = data['detail'];
+      if (detail is Map<String, dynamic>) {
+        final detailMessage = detail['message'];
+        if (detailMessage is String && detailMessage.trim().isNotEmpty) {
+          return detailMessage;
+        }
+      }
+
       final dynamic message =
           data['message'] ?? data['error'] ?? data['detail'] ?? data['msg'];
       if (message is String && message.trim().isNotEmpty) {

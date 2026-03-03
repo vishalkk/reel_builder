@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mis_mobile/core/di/di.dart';
 import 'package:provider/provider.dart';
 import 'package:mis_mobile/core/theme/premium_colors.dart';
 import 'package:mis_mobile/core/theme/premium_spacing.dart';
 import 'package:mis_mobile/features/marketplace/data/models/template_detail_dto.dart';
-import 'package:mis_mobile/features/my_reels/data/datasources/my_reels_local_data_source.dart';
-import 'package:mis_mobile/features/my_reels/data/repositories/my_reels_repository.dart';
+import 'package:mis_mobile/features/template_use/domain/entities/template_use_request.dart';
+import 'package:mis_mobile/features/template_use/presentation/bloc/template_use_bloc.dart';
 import 'package:mis_mobile/features/template_use/presentation/controllers/template_use_wizard_controller.dart';
 import 'package:mis_mobile/features/widgets/category_chip.dart';
 import 'package:mis_mobile/features/widgets/gold_gradient_button.dart';
@@ -22,9 +24,12 @@ class TemplateUsePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<TemplateUseWizardController>(
-      create: (_) => TemplateUseWizardController(template: template),
-      child: const _TemplateUseWizardView(),
+    return BlocProvider<TemplateUseBloc>(
+      create: (_) => sl<TemplateUseBloc>(),
+      child: ChangeNotifierProvider<TemplateUseWizardController>(
+        create: (_) => TemplateUseWizardController(template: template),
+        child: const _TemplateUseWizardView(),
+      ),
     );
   }
 }
@@ -39,90 +44,104 @@ class _TemplateUseWizardView extends StatelessWidget {
     TemplateUseWizardStep.export: 'Export',
   };
 
-  Future<void> _generateAndSaveReel(
+  void _submitRenderRequest(
     BuildContext context,
     TemplateUseWizardController controller,
-  ) async {
-    final outputPath = await controller.startRender();
-    if (outputPath == null || outputPath.isEmpty) {
-      if (!context.mounted) {
-        return;
-      }
-      final message = controller.renderError ?? 'Render failed.';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      return;
-    }
+  ) {
+    final slotMedia = controller.template.slots
+        .where((slot) => controller.selectedVideos[slot.id]?.isNotEmpty == true)
+        .map(
+          (slot) => RenderSlotMediaInput(
+            slotId: slot.id,
+            sourceFileId: controller.selectedVideos[slot.id]!,
+            trim: slot.durationSeconds != null
+                ? RenderTrimRange(
+                    start: 0, end: slot.durationSeconds!.toDouble())
+                : null,
+          ),
+        )
+        .toList(growable: false);
 
-    var sourceForStorage = outputPath;
-    if (!File(sourceForStorage).existsSync()) {
-      sourceForStorage = controller.selectedVideos.values.first;
-    }
-
-    try {
-      final repository = MyReelsRepositoryImpl(MyReelsLocalDataSourceImpl());
-      await repository.saveExport(
-        sourceVideoPath: sourceForStorage,
-        templateId: controller.template.id,
-        templateName: controller.template.title,
-        textOverrides: controller.textOverrides,
-        themeOverrides: controller.themeOverrides,
-      );
-    } catch (e) {
-      if (!context.mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save export: $e')),
-      );
-      return;
-    }
-
-    if (!context.mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Reel exported to My Reels.')),
+    final request = RenderSubmissionCreateRequest(
+      templateId: controller.template.id,
+      idempotencyKey:
+          '${DateTime.now().microsecondsSinceEpoch}-${controller.template.id}',
+      inputs: RenderSubmissionInputs(
+        slotMedia: slotMedia,
+        textValues: Map<String, String>.from(controller.textOverrides),
+        themeOverrides: <String, String>{
+          'primaryColor': controller.themeOverrides['primary'] ?? '#B08D57',
+          'secondaryColor': controller.themeOverrides['secondary'] ?? '#8C7853',
+          'backgroundColor':
+              controller.themeOverrides['background'] ?? '#121212',
+        },
+      ),
+      output: const RenderOutputOptions(
+        format: 'mp4',
+        resolution: '1080x1920',
+        fps: 30,
+      ),
     );
+
+    context.read<TemplateUseBloc>().add(TemplateUseSubmitted(request));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TemplateUseWizardController>(
-      builder: (context, controller, _) {
-        return Scaffold(
-          appBar: AppBar(title: const Text('Use Template')),
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(PremiumSpacing.x2),
-              child: Column(
-                children: [
-                  _buildStepper(controller),
-                  const SizedBox(height: PremiumSpacing.x2),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: _buildStepContent(context, controller),
-                    ),
-                  ),
-                  if (controller.validationError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: PremiumSpacing.x1),
-                      child: Text(
-                        controller.validationError!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.redAccent,
-                            ),
+    return BlocListener<TemplateUseBloc, TemplateUseState>(
+      listener: (context, state) {
+        if (state.status == TemplateUseStatus.completed &&
+            state.downloadUrl != null &&
+            state.downloadUrl!.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Render complete. URL: ${state.downloadUrl}'),
+            ),
+          );
+        } else if (state.status == TemplateUseStatus.failure &&
+            state.error != null &&
+            state.error!.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.error!)),
+          );
+        }
+      },
+      child: Consumer<TemplateUseWizardController>(
+        builder: (context, controller, _) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Use Template')),
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(PremiumSpacing.x2),
+                child: Column(
+                  children: [
+                    _buildStepper(controller),
+                    const SizedBox(height: PremiumSpacing.x2),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: _buildStepContent(context, controller),
                       ),
                     ),
-                  _buildFooterActions(context, controller),
-                ],
+                    if (controller.validationError != null)
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: PremiumSpacing.x1),
+                        child: Text(
+                          controller.validationError!,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.redAccent,
+                                  ),
+                        ),
+                      ),
+                    _buildFooterActions(context, controller),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -444,6 +463,8 @@ class _TemplateUseWizardView extends StatelessWidget {
     BuildContext context,
     TemplateUseWizardController controller,
   ) {
+    final renderState = context.watch<TemplateUseBloc>().state;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -476,38 +497,60 @@ class _TemplateUseWizardView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: PremiumSpacing.x3),
-        if (controller.isRendering) ...[
+        if (renderState.isBusy ||
+            renderState.status == TemplateUseStatus.completed) ...[
           LinearProgressIndicator(
-            value: controller.renderProgress,
+            value: (renderState.progress.clamp(0, 100)) / 100,
             minHeight: 8,
             backgroundColor: PremiumColors.surface,
             color: PremiumColors.gold,
           ),
           const SizedBox(height: PremiumSpacing.x1),
           Text(
-            'Rendering ${(controller.renderProgress * 100).toStringAsFixed(0)}%',
+            'Status: ${renderState.backendStatus?.name ?? renderState.status.name} '
+            '${renderState.progress}%',
             style: const TextStyle(color: PremiumColors.textSecondary),
           ),
+          if (renderState.etaSeconds != null) ...[
+            const SizedBox(height: PremiumSpacing.x1),
+            Text(
+              'ETA: ${renderState.etaSeconds}s',
+              style: const TextStyle(color: PremiumColors.textSecondary),
+            ),
+          ],
           const SizedBox(height: PremiumSpacing.x2),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: controller.cancelRender,
-              child: const Text('Cancel Render'),
+              onPressed: renderState.isBusy
+                  ? () {
+                      context.read<TemplateUseBloc>().add(
+                            const TemplateUsePollingStopped(
+                              reason: 'Stopped polling render status.',
+                            ),
+                          );
+                    }
+                  : null,
+              child: const Text('Stop Polling'),
             ),
           ),
+          const SizedBox(height: PremiumSpacing.x2),
+        ],
+        if (renderState.downloadUrl != null &&
+            renderState.downloadUrl!.isNotEmpty) ...[
+          _summaryRow('Download URL', renderState.downloadUrl!),
           const SizedBox(height: PremiumSpacing.x2),
         ],
         SizedBox(
           width: double.infinity,
           child: GoldGradientButton(
             text: 'Generate',
-            isLoading: controller.isRendering,
-            onPressed: () async {
-              if (controller.isRendering) {
+            isLoading: renderState.isBusy,
+            onPressed: () {
+              if (renderState.isBusy) {
                 return;
               }
-              await _generateAndSaveReel(context, controller);
+              _submitRenderRequest(context, controller);
             },
           ),
         ),

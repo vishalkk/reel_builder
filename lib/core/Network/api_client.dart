@@ -1,12 +1,28 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+import 'package:mis_mobile/core/utils/app_prefs.dart';
 import 'package:mis_mobile/flavors.dart';
 
 class ApiClient {
   final Dio _dio;
+  final AppPreferences? _appPreferences;
 
-  ApiClient({Dio? dio}) : _dio = dio ?? Dio(_baseOptions()) {
+  ApiClient({Dio? dio, AppPreferences? appPreferences})
+      : _dio = dio ?? Dio(_baseOptions()),
+        _appPreferences = appPreferences {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await _appPreferences?.getAccessToken() ?? '';
+          if (token.isNotEmpty) {
+            options.headers['authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+      ),
+    );
+
     if (!kReleaseMode) {
       _dio.interceptors.add(
         PrettyDioLogger(
@@ -43,6 +59,22 @@ class ApiClient {
   }) {
     return _dio.get<T>(
       path,
+      queryParameters: queryParameters,
+      options: options,
+      cancelToken: cancelToken,
+    );
+  }
+
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+  }) {
+    return _dio.post<T>(
+      path,
+      data: data,
       queryParameters: queryParameters,
       options: options,
       cancelToken: cancelToken,
