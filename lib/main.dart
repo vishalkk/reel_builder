@@ -7,8 +7,8 @@ import 'package:loggy/loggy.dart';
 import 'package:mis_mobile/blocs.dart';
 import 'package:mis_mobile/core/definition/route_names.dart';
 import 'package:mis_mobile/core/definition/routes.dart';
-import 'package:mis_mobile/core/styles/custom_colors.dart';
 import 'package:mis_mobile/core/di/di.dart';
+import 'package:mis_mobile/core/theme/premium_theme.dart';
 // import 'package:mis_mobile/firebase.dart';
 import 'package:mis_mobile/flavors.dart';
 
@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
         builder: (context, child) {
           return MaterialApp(
             title: F.title,
-            theme: applicationNameTheme(),
+            theme: PremiumTheme.theme,
             initialRoute: RouteNames.onboarding,
             navigatorObservers: [routeObserver],
             onGenerateRoute: RouteGenerator.generateRoute,
@@ -56,70 +56,5 @@ class MyApp extends StatelessWidget {
         },
       ),
     );
-  }
-
-  ThemeData applicationNameTheme() {
-    return ThemeData(
-        fontFamily: 'Plus Jakarta',
-        primaryColor: CustomColors.primary,
-        primaryColorDark: CustomColors.primaryDark,
-        primaryColorLight: CustomColors.primaryLight,
-
-        // Elevated Button Theme
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ButtonStyle(
-            backgroundColor: WidgetStateProperty.all(CustomColors.black),
-            textStyle: WidgetStateProperty.all(
-              const TextStyle(
-                  color: CustomColors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
-            ),
-            elevation: WidgetStateProperty.all(10),
-            shape: WidgetStateProperty.all(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          ),
-        ),
-
-        // Text Theme
-        textTheme: const TextTheme(
-          displayLarge: TextStyle(
-            fontSize: 34,
-            fontWeight: FontWeight.bold,
-            color: CustomColors.black,
-          ),
-          displayMedium: TextStyle(
-            fontSize: 30,
-            color: CustomColors.black,
-          ),
-          displaySmall: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            color: CustomColors.white,
-          ),
-          headlineMedium: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: CustomColors.black),
-          headlineSmall: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: CustomColors.white),
-          bodySmall: TextStyle(
-            fontSize: 18,
-            color: CustomColors.black,
-          ),
-          bodyLarge: TextStyle(
-            fontSize: 16,
-            color: CustomColors.black,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 12,
-            color: CustomColors.black,
-          ),
-        ));
   }
 }

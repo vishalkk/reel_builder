@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:loggy/loggy.dart';
 
-class StringFormatter{
+class StringFormatter {
   static String extractImageUri(String inputString) {
     if (inputString == " " || inputString == "null") {
       throw Exception("Image Uri is null or empty");

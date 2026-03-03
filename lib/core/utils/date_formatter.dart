@@ -18,7 +18,8 @@ class DateFormatter {
     try {
       final date = DateFormat("MM/yyyy").parse(uiDate);
       // Always take 1st day of month since API expects yyyy-MM-dd
-      return DateFormat("yyyy-MM-dd").format(DateTime(date.year, date.month, 1));
+      return DateFormat("yyyy-MM-dd")
+          .format(DateTime(date.year, date.month, 1));
     } catch (e) {
       return uiDate; // fallback
     }

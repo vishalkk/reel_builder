@@ -42,9 +42,8 @@ class Template extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    final Widget content = child is Expanded || child is Flexible
-        ? child
-        : Expanded(child: child);
+    final Widget content =
+        child is Expanded || child is Flexible ? child : Expanded(child: child);
 
     return Container(
       height: AppSize.s850.h,

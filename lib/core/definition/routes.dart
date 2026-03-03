@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:mis_mobile/core/definition/route_names.dart';
 import 'package:mis_mobile/features/authentication/login/presentation/pages/login_screen.dart';
 import 'package:mis_mobile/features/home.dart';
+import 'package:mis_mobile/features/marketplace/presentation/pages/marketplace_page.dart';
 import 'package:mis_mobile/features/menu/account_management/presentation/pages/account_management.dart';
 import 'package:mis_mobile/features/menu/presentation/pages/menu.dart';
 import 'package:mis_mobile/features/menu/profile/presentation/pages/profile.dart';
 import 'package:mis_mobile/features/menu/security/presentation/pages/security.dart';
 import 'package:mis_mobile/features/menu/settings/presentation/pages/settings.dart';
 import 'package:mis_mobile/features/menu/settings/themes/presentation/pages/themes.dart';
+import 'package:mis_mobile/features/my_reels/presentation/pages/my_reels_page.dart';
 import 'package:mis_mobile/features/onboarding/presentation/onboarding.dart';
+import 'package:mis_mobile/features/profile/presentation/pages/profile_page.dart';
 
 class RouteGenerator {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -26,6 +29,21 @@ class RouteGenerator {
       case RouteNames.home:
         return MaterialPageRoute(
           builder: (_) => const Home(),
+          settings: settings,
+        );
+      case RouteNames.marketplace:
+        return MaterialPageRoute(
+          builder: (_) => const MarketplacePage(),
+          settings: settings,
+        );
+      case RouteNames.myReels:
+        return MaterialPageRoute(
+          builder: (_) => const MyReelsPage(),
+          settings: settings,
+        );
+      case RouteNames.profileTab:
+        return MaterialPageRoute(
+          builder: (_) => const ProfilePage(),
           settings: settings,
         );
       case RouteNames.menu:

@@ -24,95 +24,141 @@ class CustomBottomNavState extends State<CustomBottomNav> {
         children: <Widget>[
           Expanded(
             child: GestureDetector(
-              child: Container(
-                width: double.infinity,
-                height: getProportionateScreenHeight(70),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: widget.currentIndex == 0
-                          ? CustomColors.primary
-                          : Colors.transparent,
-                      width: 3,
+                child: Container(
+                  width: double.infinity,
+                  height: getProportionateScreenHeight(70),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: widget.currentIndex == 0
+                            ? CustomColors.primary
+                            : Colors.transparent,
+                        width: 3,
+                      ),
                     ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    Icon(
-                      widget.currentIndex == 0
-                          ? Icons.home_filled
-                          : Icons.home_outlined,
-                      color: widget.currentIndex == 0
-                          ? CustomColors.primary
-                          : CustomColors.black,
-                    ),
-                    Text(
-                      'Home',
-                      style: TextStyle(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      Icon(
+                        widget.currentIndex == 0
+                            ? Icons.home_filled
+                            : Icons.home_outlined,
                         color: widget.currentIndex == 0
                             ? CustomColors.primary
                             : CustomColors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
                       ),
-                    ),
-                  ],
+                      Text(
+                        'Home',
+                        style: TextStyle(
+                          color: widget.currentIndex == 0
+                              ? CustomColors.primary
+                              : CustomColors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              onTap: () {
-                setState(() {
-                  widget.currentIndex = 0;
-                });
-                context.read<IndexCubit>().updateIndex(0);
-              }),
+                onTap: () {
+                  setState(() {
+                    widget.currentIndex = 0;
+                  });
+                  context.read<IndexCubit>().updateIndex(0);
+                }),
           ),
           Expanded(
             child: GestureDetector(
-              child: Container(
-                width: double.infinity,
-                height: getProportionateScreenHeight(70),
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: widget.currentIndex == 1
-                          ? CustomColors.primary
-                          : Colors.transparent,
-                      width: 3,
+                child: Container(
+                  width: double.infinity,
+                  height: getProportionateScreenHeight(70),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: widget.currentIndex == 1
+                            ? CustomColors.primary
+                            : Colors.transparent,
+                        width: 3,
+                      ),
                     ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: <Widget>[
-                    Icon(
-                      widget.currentIndex == 1
-                          ? Icons.headset_mic
-                          : Icons.headset_mic_outlined,
-                      color: widget.currentIndex == 1
-                          ? CustomColors.primary
-                          : CustomColors.black,
-                    ),
-                    Text(
-                      'Support',
-                      style: TextStyle(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      Icon(
+                        widget.currentIndex == 1
+                            ? Icons.video_collection
+                            : Icons.video_collection_outlined,
                         color: widget.currentIndex == 1
                             ? CustomColors.primary
                             : CustomColors.black,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
+                      ),
+                      Text(
+                        'My Reels',
+                        style: TextStyle(
+                          color: widget.currentIndex == 1
+                              ? CustomColors.primary
+                              : CustomColors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                onTap: () {
+                  setState(() {
+                    widget.currentIndex = 1;
+                  });
+                  context.read<IndexCubit>().updateIndex(1);
+                }),
+          ),
+          Expanded(
+            child: GestureDetector(
+                child: Container(
+                  width: double.infinity,
+                  height: getProportionateScreenHeight(70),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: widget.currentIndex == 2
+                            ? CustomColors.primary
+                            : Colors.transparent,
+                        width: 3,
                       ),
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: <Widget>[
+                      Icon(
+                        widget.currentIndex == 2
+                            ? Icons.person
+                            : Icons.person_outline,
+                        color: widget.currentIndex == 2
+                            ? CustomColors.primary
+                            : CustomColors.black,
+                      ),
+                      Text(
+                        'Profile',
+                        style: TextStyle(
+                          color: widget.currentIndex == 2
+                              ? CustomColors.primary
+                              : CustomColors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              onTap: () {
-                setState(() {
-                  widget.currentIndex = 1;
-                });
-                context.read<IndexCubit>().updateIndex(1);
-              }),
+                onTap: () {
+                  setState(() {
+                    widget.currentIndex = 2;
+                  });
+                  context.read<IndexCubit>().updateIndex(2);
+                }),
           ),
         ],
       ),

@@ -3,7 +3,6 @@ TODO:
 import firebase options based on the app flavor
  */
 
-
 // import 'package:firebase_core/firebase_core.dart';
 
 // import 'package:mobile/firebase_options.dart' as prod;

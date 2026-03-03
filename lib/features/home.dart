@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:mis_mobile/core/providers/IndexCubit/index_cubit.dart';
 import 'package:mis_mobile/core/styles/custom_colors.dart';
 import 'package:mis_mobile/core/utils/screen_util.dart';
-import 'package:mis_mobile/features/menu/presentation/pages/menu.dart';
-import 'package:mis_mobile/features/presentation/dashboard.dart';
+import 'package:mis_mobile/features/marketplace/presentation/pages/marketplace_page.dart';
+import 'package:mis_mobile/features/my_reels/presentation/pages/my_reels_page.dart';
+import 'package:mis_mobile/features/profile/presentation/pages/profile_page.dart';
 import 'package:mis_mobile/features/widgets/custom_bottom_nav.dart';
 
 class Home extends StatefulWidget {
@@ -24,8 +25,9 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     // bottom nav pages
     var pages = const [
-      Dashboard(),
-      Menu(),
+      MarketplacePage(),
+      MyReelsPage(),
+      ProfilePage(),
     ];
 
     return BlocBuilder<IndexCubit, int>(

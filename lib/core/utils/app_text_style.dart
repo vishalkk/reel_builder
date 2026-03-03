@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:mis_mobile/core/styles/custom_colors.dart';
+import 'package:mis_mobile/core/theme/premium_colors.dart';
 
 class AppTextStyles {
   // Small Body Text
   static TextStyle bodySmall(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 12,
       FontWeight fontWeight = FontWeight.w400}) {
     return TextStyle(
@@ -19,7 +19,7 @@ class AppTextStyles {
 
   // Regular Body Text
   static TextStyle bodyMedium(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 14,
       FontWeight fontWeight = FontWeight.w500}) {
     return TextStyle(
@@ -33,7 +33,7 @@ class AppTextStyles {
 
   // Large Body Text
   static TextStyle bodyLarge(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 16,
       FontWeight fontWeight = FontWeight.w600}) {
     return TextStyle(
@@ -46,7 +46,7 @@ class AppTextStyles {
   }
 
   static TextStyle bodyXLarge(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 20,
       FontWeight fontWeight = FontWeight.w400}) {
     return TextStyle(
@@ -60,7 +60,7 @@ class AppTextStyles {
 
   // Headline Small
   static TextStyle headlineSmall(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 18,
       FontWeight fontWeight = FontWeight.w600}) {
     return TextStyle(
@@ -74,7 +74,7 @@ class AppTextStyles {
 
   // Headline Medium
   static TextStyle headlineMedium(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 22,
       FontWeight fontWeight = FontWeight.w700}) {
     return TextStyle(
@@ -88,7 +88,7 @@ class AppTextStyles {
 
   // Headline Large
   static TextStyle headlineLarge(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 28,
       FontWeight fontWeight = FontWeight.w700}) {
     return TextStyle(
@@ -102,7 +102,7 @@ class AppTextStyles {
 
   // Headline XLarge
   static TextStyle headlineXLarge(
-      {Color color = CustomColors.black,
+      {Color color = PremiumColors.textPrimary,
       double fontSize = 30,
       FontWeight fontWeight = FontWeight.w700}) {
     return TextStyle(
@@ -117,9 +117,9 @@ class AppTextStyles {
   static ThemeData textFieldThemeData() {
     return ThemeData(
         textSelectionTheme: TextSelectionThemeData(
-      cursorColor: Colors.black,
-      selectionColor: Colors.black26,
-      selectionHandleColor: Colors.black,
+      cursorColor: PremiumColors.gold,
+      selectionColor: PremiumColors.softGold.withOpacity(0.3),
+      selectionHandleColor: PremiumColors.gold,
     ));
   }
 }

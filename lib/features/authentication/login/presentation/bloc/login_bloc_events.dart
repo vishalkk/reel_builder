@@ -6,6 +6,7 @@ abstract class LoginBlocEvent extends Equatable {
   @override
   List<Object?> get props => [];
 }
+
 class LoginSubmitted extends LoginBlocEvent {
   final String countryCode;
   final String phoneNumber;

@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:loggy/loggy.dart';
 import 'package:quickalert/quickalert.dart';
+import 'package:mis_mobile/core/definition/route_names.dart';
 import 'package:mis_mobile/core/di/di.dart';
 import 'package:mis_mobile/core/utils/app_prefs.dart';
 import 'package:mis_mobile/core/utils/app_size.dart';
 import 'package:mis_mobile/core/utils/string_constant.dart';
 import 'package:mis_mobile/features/authentication/login/presentation/bloc/login_bloc.dart';
-import 'package:mis_mobile/features/home.dart';
 import 'package:mis_mobile/core/utils/screen_util.dart';
 import 'package:mis_mobile/features/widgets/buttons/custom_swipe_button.dart';
 import 'package:mis_mobile/features/widgets/custom_textfield.dart';
@@ -56,9 +56,7 @@ class _LoginScreenState extends State<LoginScreen> {
           sl<AppPreferences>().setRefreshToken(state.user?.refreshToken ?? '');
           sl<AppPreferences>().setUserId(state.user?.id ?? '');
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (BuildContext context) => const Home(),
-            ));
+            Navigator.of(context).pushReplacementNamed(RouteNames.home);
           });
         }
       },
